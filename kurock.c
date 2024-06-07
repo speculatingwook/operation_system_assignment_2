@@ -110,6 +110,8 @@ void* writer(void* args){
 
     struct timespec current;
     struct timespec deadline;
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     useconds_t period = 1000000/t_args->whz;
     unsigned long cnt = 0;
@@ -133,7 +135,12 @@ void* writer(void* args){
         cnt++;
         usleep(period);
     } while (timespec_cmp(deadline, current) > 0);
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
     
+    long long elapsed_time = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
+    
+    fprintf(writer_file, "%lld\n", elapsed_time);
     
     return (void*) cnt;
 }
@@ -194,6 +201,8 @@ void* reader(void* args){
 
     struct timespec current;
     struct timespec deadline;
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     struct linked_list* list = (struct linked_list*)malloc(sizeof(struct linked_list));
     struct linked_list* current_list = list;
@@ -225,6 +234,10 @@ void* reader(void* args){
     } while (timespec_cmp(deadline, current) > 0);
 
     traverse(r_args->fp, list);
+    lock_gettime(CLOCK_MONOTONIC, &end);
+    
+    long long elapsed_time = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
+    fprintf(reader_file, "%lld\n", elapsed_time);
 
     return (void*)cnt;
 }
@@ -336,67 +349,71 @@ void usage(){
     printf("<s>: Total execution time (seconds)\n");
 }
 
-int main(int argc, char* argv[]){
 
+int main(int argc, char* argv[]) {
     lock_t locktype;
     int readers, writers;
     int rhz, whz;
     int duration;
     struct results res;
 
-    if(argc != 7){
+    if (argc != 7) {
         usage();
         printf("invaild arg numbs!\n");
         exit(1);
     }
 
-    if(strcmp("rwr", argv[1]) == 0)
+    if (strcmp("rwr", argv[1]) == 0)
         locktype = rwr;
-    
-    else if(strcmp("rww", argv[1]) == 0)
+    else if (strcmp("rww", argv[1]) == 0)
         locktype = rww;
-
-    else if(strcmp("seq", argv[1]) == 0)
+    else if (strcmp("seq", argv[1]) == 0)
         locktype = seq;
-
-    else{
+    else {
         usage();
         printf("lock type invalid!\n");
         exit(1);
     }
 
     readers = atoi(argv[2]);
-    if(readers < 1){
+    if (readers < 1) {
         usage();
         printf("reader count invalid!\n");
         exit(1);
     }
 
     rhz = atoi(argv[3]);
-    if(rhz < 1 ||  rhz > 100000){
+    if (rhz < 1 || rhz > 100000) {
         usage();
         printf("rhz invalid!\n");
     }
 
     writers = atoi(argv[4]);
-    if(writers < 1){
+    if (writers < 1) {
         usage();
         printf("writer count invalid!\n");
         exit(1);
     }
 
     whz = atoi(argv[5]);
-    if(whz < 1 ||  whz > 100000){
+    if (whz < 1 || whz > 100000) {
         usage();
         printf("whz invalid!\n");
     }
 
     duration = atoi(argv[6]);
 
+    // 결과를 저장할 파일 열기
+    reader_file = fopen("reader_elapsed_time.txt", "w");
+    writer_file = fopen("writer_elapsed_time.txt", "w");
+
     res = works(locktype, readers, writers, whz, rhz, duration);
 
-    stats(duration,res);
+    // 파일 닫기
+    fclose(reader_file);
+    fclose(writer_file);
+
+    stats(duration, res);
 
     return 0;
-
 }

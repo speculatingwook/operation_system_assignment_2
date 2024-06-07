@@ -1,0 +1,7 @@
+Local writer counter total sum : 26969
+Local reader counter total sum : 53898
+
+Global counter : 26969
+
+Wrtier throughput: 2696.900000 ops/sec
+Reader throughput: 5389.800000 ops/sec

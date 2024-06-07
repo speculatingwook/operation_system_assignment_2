@@ -1,0 +1,19 @@
+#!/bin/bash
+
+locks=("rwr" "rww" "seq")
+readers=(1 2 4 8)
+writers=(1 2 4 8)
+rhz=1000
+whz=1000
+duration=10
+
+for lock in "${locks[@]}"
+do
+    for reader in "${readers[@]}"
+    do
+        for writer in "${writers[@]}"
+        do
+            ./kurock $lock $reader $rhz $writer $whz $duration > "result_${lock}_${reader}_${writer}.txt"
+        done
+    done
+done
